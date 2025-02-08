@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:\Users\Daniyal Khan\Desktop\OCR\instance\database.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="125"/><column_width id="3" width="2182"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,6:mainOrders"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="Orders" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="105"/><column index="2" value="133"/><column index="3" value="188"/><column index="4" value="238"/><column index="5" value="120"/><column index="6" value="178"/><column index="7" value="160"/><column index="8" value="160"/><column index="9" value="133"/><column index="10" value="216"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">--TASK 1
+--a
+SELECT COUNT(DISTINCT order_number) AS total_Orders
+FROM orders;
+--b
+select sum((amount_per_unit*ordered_quantity)-item_discount)as Total_Revenue from orders where order_status = &quot;CLOSED&quot;;
+--c
+select avg(ordered_quantity) as avg_orders from Orders where order_status = &quot;CLOSED&quot;; 
+--d
+SELECT order_warehouse_id, store_id, COUNT(*) AS Total_Orders FROM Orders GROUP BY order_warehouse_id, store_id
+ORDER BY order_warehouse_id, store_id;
+--e
+SELECT item_id, SUM(ordered_quantity) AS total_sold FROM orders GROUP BY item_id
+ORDER BY total_sold DESC LIMIT 5;
+
+--TASK 2
+--a
+SELECT AVG(item_discount / ordered_quantity) AS average_discount_rate
+FROM Orders;
+--b
+SELECT order_warehouse_id, AVG(total_sales_revenue / total_orders) AS avg_order_value FROM (
+    SELECT order_warehouse_id, COUNT(DISTINCT order_number) AS total_orders, SUM((amount_per_unit * ordered_quantity) -( item_discount)) AS total_sales_revenue
+    FROM Orders GROUP BY order_warehouse_id ) AS warehouse_orders ORDER BY avg_order_value DESC LIMIT 1;
+
+
+--c
+SELECT store_id, SUM(amount_per_unit * ordered_quantity -( item_discount)) AS total_revenue
+FROM Orders GROUP BY store_id;
+
+--d
+--e
+SELECT SUBSTR(order_date, 1, 7) AS month, SUM((amount_per_unit * ordered_quantity) - item_discount) AS total_revenue,
+    LAG(SUM((amount_per_unit * ordered_quantity) - item_discount)) OVER (ORDER BY SUBSTR(order_date, 1, 7)) AS previous_month_revenue,
+    (SUM((amount_per_unit * ordered_quantity) - item_discount)) - LAG(SUM((amount_per_unit * ordered_quantity )- item_discount) 
+	OVER (ORDER BY SUBSTR(order_date, 1, 7))) / LAG(SUM((amount_per_unit * ordered_quantity )- item_discount)) 
+	OVER (ORDER BY SUBSTR(order_date, 1, 7)) AS growth_rate
+FROM orders
+GROUP BY month;
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>

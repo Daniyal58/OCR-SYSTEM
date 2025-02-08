@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Annotation and Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #007bff;
+            color: #fff;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            transition: width 0.3s;
+            position: fixed; /* Fix sidebar position */
+            top: 0; /* Align to the top */
+            bottom: 0; /* Take full height */
+            left: 0; /* Align to the extreme left */
+            z-index: 1000; /* Ensure it's above other content */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .tabs {
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tab:hover {
+            background-color: #0056b3;
+        }
+
+        .main-content {
+            flex: 1;
+            background-color: #fff;
+            padding: 20px;
+            overflow-y: auto;
+            margin-left: 200px; /* Adjust margin to accommodate the sidebar width */
+            transition: margin-left 0.3s; /* Add transition effect */
+        }
+
+        .main-content.collapsed {
+            margin-left: 60px;
+        }
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin-top: 0;
+        }
+        .overlay {
+            position: fixed; /* Fixed position to overlay the entire viewport */
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+            z-index: 1000; /* Ensure the overlay is above other content */
+            display: none; /* Initially hide the overlay */
+        }
+
+        .overlay-contentS {
+            position: absolute;
+            top: 50%;
+            width: 60%;
+            height: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border-color: red;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #uploadedImage {
+            right: 10px;
+            max-width: 100%; /* Ensure the image does not exceed the container's width */
+            max-height: 100%; /* Ensure the image does not exceed the container's height */
+            object-fit: contain; /* Maintain aspect ratio while fitting the image within the container */
+           
+        }
+
+        .overlay-controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .document-upload {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .file-upload-label:hover {
+            background-color: #0056b3;
+        }
+
+        .document-viewer {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .document {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .highlighted {
+            background-color: #ffff00;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background-color: #007bff;
+            color: #fff;
+            padding: 5px 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tag:hover {
+            background-color: #0056b3;
+        }
+
+        .separator {
+            height: 100%;
+            width: 1px;
+            background-color: #ddd;
+        }
+        body {
+            background-color: #f9f9f9; /* Light gray background color for the body */
+        }
+
+        h1 {
+            color: #333; /* Title text color */
+            text-align: center;
+            margin-top: 0;
+            font-size: 2.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Use a professional font */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle text shadow */
+            padding: 20px; /* Add padding to title for better visibility */
+            background-color: #fff; /* White background color for the title */
+            border-bottom: 1px solid #ddd; /* Add a subtle border at the bottom */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow */
+        }
+        #extractedText {
+                width: 100%;
+        max-height: 300px; /* Adjust the maximum height as needed */
+        overflow-y: auto; /* Add scrollbar when content overflows */
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+    .highlighted {
+        background-color: yellow; /* Change the background color as desired */
+    }
+    a {
+        text-decoration: none; /* Remove underline */
+        color: white; /* Set text color to white */
+    }
+    .im {
+        max-width: 80%; /* Set the maximum width of the container */
+        max-height: 80%; /* Set the maximum height of the container */
+        overflow: auto; /* Enable scrolling for overflow content */
+        position: relative; /* Position the image relative to its container */
+    }
+
+    #uploadedImage {
+        max-width: 100%; /* Ensure the image does not exceed the container's width */
+        max-height: 100%; /* Ensure the image does not exceed the container's height */
+        object-fit: contain; /* Maintain aspect ratio while fitting the image within the container */
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+      
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #007bff;
+      color: #fff;
+      padding: 20px;
+      transition: width 0.3s;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .sidebar.collapsed {
+      width: 60px;
+    }
+
+    .nav-item {
+      margin-bottom: 10px;
+    }
+
+    .nav-link {
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+
+    .nav-link:hover {
+      background-color: #0056b3;
+    }
+
+    .main-content {
+      flex: 1;
+      background-color: #fff;
+      padding: 20px;
+      overflow-y: auto;
+      margin-left: 200px;
+      transition: margin-left 0.3s;
+    }
+
+    .main-content.collapsed {
+      margin-left: 60px;
+    }
+
+    h1, h2 {
+      color: #333;
+      text-align: center;
+      margin-top: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: none;
+    }
+
+    .overlay-content {
+      position: absolute;
+      top: 50%;
+      width: 80%;
+      height: 80%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #uploadedImage {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .overlay-controls {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background-color: #f0f0f0;
+      color: #333;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .document-upload {
+      text-align: center;
+      padding: 20px;
+    }
+    .sidebar {
+            height: 100%;
+        }
+    
+        </style>
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        
+</head>
+<body>
+    <input type="hidden" id="user_id" value="{{ current_user.id }}">
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 bg-primary text-white">
+                <!-- Sidebar -->
+                <div class="p-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-link text-white" id="uploadTab">Upload</div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="nav-link text-white" id="userDocumentsTab">User Documents</div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="/logout">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-10">
+                <!-- Main Content -->
+                <div class="p-4">
+                    <h1 class="text-center mb-4">Document Annotation and Management System</h1>
+                    <!-- Document List -->
+                    <ul id="document-list"></ul>
+                    
+                    <!-- Document Upload Section -->
+                    <div class="document-upload mb-4" id="uploadSection">
+                        <label for="fileUpload" class="btn btn-primary">Choose File</label>
+                        <input type="file" id="fileUpload" accept="image/*" onchange="showDocument()" style="display: none;">
+                        <button class="btn btn-primary" onclick="extract()">Extract Text</button>
+                    </div>
+                    
+                    <!-- Document Viewer -->
+                    <div class="document-viewer mb-4" id="textTranscription" style="display: none;">
+                        <h2 class="text-center mb-3">Text Transcription</h2>
+                        <textarea id="extractedText" class="form-control mb-3"></textarea>
+                        <div class="text-center">
+                            <button class="btn btn-primary mr-2" onclick="extractAndProcess()">Process Important Words</button>
+                            <button class="btn btn-primary mr-2" onclick="removeStopWords()">Remove Words</button>
+                            <button class="btn btn-secondary" onclick="close()">Close</button>
+                        </div>
+                        <div id="importantWordsContainer" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay" class="overlay">
+        <div id="N" class="overlay-contentS">
+                <span class="close" onclick="closeOverlay()">&times;</span>
+                <div class="overlay-controls">
+                    <button onclick="zoomIn()">Zoom In</button>
+                    <button onclick="zoomOut()">Zoom Out</button>
+                    <button onclick="extract()">Extract Text</button>
+                    <button onclick="closeOverlay()">Close</button>
+                </div>
+                <div id="overlayContent" class="im">
+                    <img id="uploadedImage" src="" alt="Uploaded Image">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS, jQuery, and Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+
+    document.getElementById('userDocumentsTab').addEventListener('click', function() {
+        // Get the user ID from the hidden input field
+        const userId = document.getElementById('user_id').value;
+
+        // Make an AJAX request to fetch the user's documents
+        fetch('/get_user_documents', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user_id: userId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const documents = data.documents;
+            // Display the documents on the page
+            const documentList = document.getElementById('document-list');
+            documents.forEach(document => {
+                const documentItem = document.createElement('li');
+                documentItem.textContent = document;
+                documentList.appendChild(documentItem);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching user documents:', error);
+        });
+    });
+
+        function close(){
+            document.getElementById('textTranscription').style.display = 'none';
+        }
+        
+        function removeStopWords(text) {
+            const extractedText = document.getElementById('extractedText').value;
+            fetch('/remove_stopwords', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: extractedText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const cleanedText = data.cleaned_text;
+                console.log('Cleaned Text:', cleanedText);
+                
+                    
+                document.getElementById('importantWordsContainer').innerText = cleanedText;
+            })
+            .catch(error => {
+                console.error('Error removing stop words:', error);
+            });
+        }
+
+        function extractAndProcess() {
+                // Get the extracted text from the textarea
+                const extractedText = document.getElementById('extractedText').value;
+
+                // Send the extracted text to the Flask backend for processing
+                fetch('/process-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: extractedText })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const important_words = data.important_words;
+                    document.getElementById('importantWordsContainer').innerText = important_words;
+                })
+                .catch(error => {
+                    console.error('Error processing text:', error);
+                });
+            }
+        
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            let highlightFlag = false;
+            let startPosition = null;
+            let end = null;
+
+        
+      
+        document.getElementById('uploadTab').addEventListener('click', function() {
+            document.getElementById('uploadSection').style.display = 'block';
+        });
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const separator = document.querySelector('.separator');
+            const sidebarWidth = sidebar.offsetWidth;
+            separator.style.height = mainContent.offsetHeight + 'px';
+            sidebar.addEventListener('mouseenter', function() {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('collapsed'); // Expand main content
+                separator.style.width = '1px';
+            });
+            sidebar.addEventListener('mouseleave', function() {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('collapsed'); // Collapse main content
+                separator.style.width = sidebarWidth + 'px';
+            });
+        });
+
+        function showDocument() {
+            console.log("Image upload detected!");
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageDataUrl = e.target.result;
+                    // Display the uploaded image instantly
+                    const uploadedImage = document.getElementById('uploadedImage');
+                    uploadedImage.src = imageDataUrl;
+                    document.getElementById('overlay').style.display = 'block';
+                    const overlayContent = document.getElementById('overlayContent');
+                    overlayContent.appendChild(uploadedImage);
+                    // Display the button for extracting text
+                    document.getElementById('extractButton').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                document.getElementById('uploadSection').style.display = 'none';
+            }
+            
+                const document_name = file.name;
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('doc_name', document_name);
+                const userId = document.getElementById('user_id').value;
+                formData.append('user_id', userId);
+
+                
+                fetch('/upload_image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Image uploaded successfully!');
+                    } else {
+                        alert('Failed to upload image. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error uploading image:', error);
+                    alert('An error occurred while uploading the image. Please try again later.');
+                });
+        }
+
+
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+
+        function zoomIn() {
+                const uploadedImage = document.getElementById('uploadedImage');
+            const currentScale = getComputedStyle(uploadedImage).transform;
+
+            let newScale;
+            if (currentScale === 'none') {
+                newScale = 1.1;
+            } else {
+                const val = parseFloat(currentScale.split('(')[1]);
+                newScale = val * 1.1;
+                // Increase the maximum scale value as needed
+                if (newScale > 10) { // Adjust the maximum scale value here (e.g., 3)
+                    return;
+                }
+            }
+
+            uploadedImage.style.transform = `scale(${newScale})`;
+        }
+
+        function zoomOut() {
+            const uploadedImage = document.getElementById('uploadedImage');
+            const currentScale = parseFloat(uploadedImage.style.transform.replace('scale(', '')) || 1;
+            const newScale = Math.max(currentScale - 0.1, 1); 
+
+            uploadedImage.style.transform = `scale(${newScale})`;
+        }
+
+
+
+       
+
+    function extract() {
+        const fileInput = document.getElementById('fileUpload');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/extract-text', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const extractedText = data.text;
+                console.log('Extracted Text:', extractedText);
+                document.getElementById('textTranscription').style.display = 'block';
+                // Display the extracted text in the designated div element
+                document.getElementById('extractedText').innerText = extractedText;
+            })
+            .catch(error => {
+                console.error('Error extracting text:', error);
+            });
+        }
+    }
+
+   
+
+
+    </script>
+</body>
+</html>
